@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시사상식 스터디 소재 카드 저장소</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <h1>시사상식 스터디 소재 카드 저장소</h1>
+      <p>스터디에서 다룰 시사 소재를 카드 형태로 모으고, 검색과 필터로 빠르게 찾아보세요.</p>
+    </div>
+  </header>
+
+  <main class="container layout">
+    <section class="panel form-panel" aria-labelledby="form-title">
+      <h2 id="form-title">소재 추가</h2>
+      <form id="material-form" novalidate>
+        <label for="studyCode">스터디 코드</label>
+        <input id="studyCode" name="studyCode" type="text" required placeholder="예: NEWS-2026-A">
+
+        <label for="author">작성자</label>
+        <input id="author" name="author" type="text" required placeholder="이름">
+
+        <label for="category">대분류</label>
+        <select id="category" name="category" required></select>
+
+        <label for="title">소재명</label>
+        <input id="title" name="title" type="text" required placeholder="예: 기준금리 동결 배경">
+
+        <label for="description">한줄 설명</label>
+        <input id="description" name="description" type="text" placeholder="핵심 맥락 한 줄 요약">
+
+        <label for="point">출제 포인트</label>
+        <textarea id="point" name="point" rows="4" placeholder="면접/토론에서 물어볼 포인트"></textarea>
+
+        <label for="source">출처 링크/비고</label>
+        <input id="source" name="source" type="text" placeholder="https://... 또는 메모">
+
+        <button id="submit-button" type="submit">소재 등록</button>
+        <p id="form-message" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel list-panel" aria-labelledby="list-title">
+      <div class="list-head">
+        <h2 id="list-title">소재 목록</h2>
+        <button id="refresh-button" type="button" class="secondary">새로고침</button>
+      </div>
+
+      <div class="controls">
+        <input id="search-input" type="search" placeholder="소재명, 설명, 출제 포인트, 작성자, 출처 검색" aria-label="검색">
+        <select id="filter-category" aria-label="대분류 필터"></select>
+      </div>
+
+      <p id="list-status" class="status" aria-live="polite"></p>
+      <div id="cards" class="cards" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
