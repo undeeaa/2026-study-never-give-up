@@ -25,6 +25,7 @@ const state = {
     items: [],
     index: 0,
     flipped: false,
+    preferDescriptionFirst: false,
   },
   quiz: {
     items: [],
@@ -72,6 +73,7 @@ const flashStartButton = document.getElementById("flash-start-button");
 const flashResetButton = document.getElementById("flash-reset-button");
 const flashBackButton = document.getElementById("flash-back-button");
 const flashSetupStatus = document.getElementById("flash-setup-status");
+const flashPreferDescriptionInput = document.getElementById("flash-prefer-description");
 const flashCard = document.getElementById("flash-card");
 const flashProgress = document.getElementById("flash-progress");
 const flashProgressTrack = document.getElementById("flash-progress-track");
@@ -693,6 +695,10 @@ function setFlashStage(stage) {
   flashPlayStep.hidden = !isPlay;
 }
 
+function getFlashDefaultFlipped() {
+  return Boolean(flashPreferDescriptionInput?.checked);
+}
+
 function setFlashProgress(current, total) {
   const safeCurrent = Number.isFinite(current) ? Math.max(0, current) : 0;
   const safeTotal = Number.isFinite(total) ? Math.max(0, total) : 0;
@@ -737,13 +743,13 @@ function nextFlashCard() {
   if (state.flash.index >= state.flash.items.length - 1) {
     state.flash.items = shuffle(state.flash.items);
     state.flash.index = 0;
-    state.flash.flipped = false;
+    state.flash.flipped = state.flash.preferDescriptionFirst;
     renderFlashCard("한 바퀴 완료, 자동으로 다시 섞었습니다");
     return;
   }
 
   state.flash.index += 1;
-  state.flash.flipped = false;
+  state.flash.flipped = state.flash.preferDescriptionFirst;
   renderFlashCard();
 }
 
@@ -770,7 +776,8 @@ async function startFlashCards() {
 
   state.flash.items = shuffle(memorizationItems);
   state.flash.index = 0;
-  state.flash.flipped = false;
+  state.flash.preferDescriptionFirst = getFlashDefaultFlipped();
+  state.flash.flipped = state.flash.preferDescriptionFirst;
 
   setStatus(flashSetupStatus, "", `총 ${state.flash.items.length}개 카드를 준비했습니다.`);
   setFlashStage("play");
@@ -782,6 +789,10 @@ function resetFlashCards() {
   state.flash.items = [];
   state.flash.index = 0;
   state.flash.flipped = false;
+  state.flash.preferDescriptionFirst = false;
+  if (flashPreferDescriptionInput) {
+    flashPreferDescriptionInput.checked = false;
+  }
   setFlashStage("setup");
   flashCard.classList.remove("is-flipped");
   setFlashProgress(0, 0);

@@ -636,6 +636,22 @@ a:focus-visible {
   gap: 10px;
 }
 
+.flash-setup-option {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #4b5568;
+}
+
+.flash-setup-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
 .flash-setup-actions > button {
   width: 100%;
   min-height: 52px;
@@ -999,17 +1015,40 @@ a:focus-visible {
 
 @media (max-width: 680px) {
   .app-header-inner {
-    height: 58px;
-    align-items: stretch;
+    height: auto;
+    align-items: flex-start;
     flex-direction: column;
-    justify-content: center;
-    padding: 6px 0;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 8px 0 10px;
+  }
+
+  .brand {
+    line-height: 1.2;
+  }
+
+  .top-nav {
+    width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .top-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .top-nav a {
-    min-height: 36px;
-    padding: 7px 10px;
-    font-size: 12px;
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex: 0 0 auto;
   }
 
   .shared-grid {

@@ -134,6 +134,15 @@ test('flash setup actions are centered, two-row, and equal-width', () => {
   assert.match(css, /\.flash-setup-actions\s*>\s*button\s*\{[\s\S]*width:\s*100%;/);
 });
 
+test('flash setup has "description first" option and uses it as initial card side', () => {
+  assert.match(html, /id=\"flash-prefer-description\"/);
+  assert.match(js, /preferDescriptionFirst:\s*false/);
+  assert.match(js, /function getFlashDefaultFlipped\(/);
+  assert.match(js, /state\.flash\.preferDescriptionFirst = getFlashDefaultFlipped\(\)/);
+  assert.match(js, /state\.flash\.flipped = state\.flash\.preferDescriptionFirst/);
+  assert.match(js, /flashPreferDescriptionInput\.checked = false/);
+});
+
 test('quiz view has progress bar UI and progress updater', () => {
   assert.match(html, /id=\"quiz-progress-track\"/);
   assert.match(html, /id=\"quiz-progress-fill\"/);
