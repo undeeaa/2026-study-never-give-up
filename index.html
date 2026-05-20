@@ -3,62 +3,123 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>시사상식 스터디 소재 카드 저장소</title>
+  <title>시사상식 스터디 소재 저장소</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="hero">
-    <div class="container">
-      <h1>시사상식 스터디 소재 카드 저장소</h1>
-      <p>스터디에서 다룰 시사 소재를 카드 형태로 모으고, 검색과 필터로 빠르게 찾아보세요.</p>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a href="?view=list" data-view-link="list" class="brand">Study Issue Bank</a>
+      <nav class="top-nav" aria-label="주요 메뉴">
+        <a href="?view=list" data-view-link="list" id="nav-list">소재 목록</a>
+        <a href="?view=add" data-view-link="add" id="nav-add">소재 등록</a>
+      </nav>
     </div>
   </header>
 
-  <main class="container layout">
-    <section class="panel form-panel" aria-labelledby="form-title">
-      <h2 id="form-title">소재 추가</h2>
-      <form id="material-form" novalidate>
-        <label for="studyCode">스터디 코드</label>
-        <input id="studyCode" name="studyCode" type="text" required placeholder="예: NEWS-2026-A">
+  <main class="app-main">
+    <section id="view-list" class="view" aria-labelledby="list-page-title">
+      <div class="page-shell">
+        <header class="page-head">
+          <div>
+            <p class="kicker">Main</p>
+            <h1 id="list-page-title">스터디 소재 목록</h1>
+            <p>질문, 정답, 한 줄 해설을 빠르게 검색하고 필터링하세요.</p>
+          </div>
+          <a href="?view=add" data-view-link="add" class="primary-link">새 소재 등록</a>
+        </header>
 
-        <label for="author">작성자</label>
-        <input id="author" name="author" type="text" required placeholder="이름">
+        <div class="toolbar">
+          <input id="search-input" type="search" placeholder="질문, 정답, 한 줄 해설, 작성자, 출처 검색" aria-label="검색">
+          <select id="filter-category" aria-label="대분류 필터"></select>
+          <button id="refresh-button" type="button">새로고침</button>
+        </div>
 
-        <label for="category">대분류</label>
-        <select id="category" name="category" required></select>
-
-        <label for="title">소재명</label>
-        <input id="title" name="title" type="text" required placeholder="예: 기준금리 동결 배경">
-
-        <label for="description">한줄 설명</label>
-        <input id="description" name="description" type="text" placeholder="핵심 맥락 한 줄 요약">
-
-        <label for="point">출제 포인트</label>
-        <textarea id="point" name="point" rows="4" placeholder="면접/토론에서 물어볼 포인트"></textarea>
-
-        <label for="source">출처 링크/비고</label>
-        <input id="source" name="source" type="text" placeholder="https://... 또는 메모">
-
-        <button id="submit-button" type="submit">소재 등록</button>
-        <p id="form-message" class="message" role="status" aria-live="polite"></p>
-      </form>
+        <p id="list-status" class="status" aria-live="polite"></p>
+        <div id="list-loading" class="loading-inline" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>소재 목록을 불러오는 중입니다. 잠시만 기다려주세요.</span>
+        </div>
+        <div id="cards" class="cards" aria-live="polite"></div>
+      </div>
     </section>
 
-    <section class="panel list-panel" aria-labelledby="list-title">
-      <div class="list-head">
-        <h2 id="list-title">소재 목록</h2>
-        <button id="refresh-button" type="button" class="secondary">새로고침</button>
-      </div>
+    <section id="view-add" class="view" aria-labelledby="form-page-title">
+      <div class="page-shell narrow">
+        <header class="page-head">
+          <div>
+            <p class="kicker">Create</p>
+            <h1 id="form-page-title">소재 등록</h1>
+            <p>여러 소재를 한 번에 입력하고 일괄 등록할 수 있습니다.</p>
+          </div>
+          <a href="?view=list" data-view-link="list" class="secondary-link">목록으로 이동</a>
+        </header>
 
-      <div class="controls">
-        <input id="search-input" type="search" placeholder="소재명, 설명, 출제 포인트, 작성자, 출처 검색" aria-label="검색">
-        <select id="filter-category" aria-label="대분류 필터"></select>
-      </div>
+        <form id="material-form" class="form-card" novalidate>
+          <div class="shared-grid">
+            <div class="field">
+              <label for="studyCode">스터디 코드</label>
+              <input id="studyCode" name="studyCode" type="text" required placeholder="스터디 코드를 입력해주세요">
+            </div>
 
-      <p id="list-status" class="status" aria-live="polite"></p>
-      <div id="cards" class="cards" aria-live="polite"></div>
+            <div class="field">
+              <label for="author">작성자</label>
+              <input id="author" name="author" type="text" required placeholder="이름">
+            </div>
+
+            <div class="field full">
+              <label for="category">대분류</label>
+              <select id="category" name="category" required></select>
+            </div>
+          </div>
+
+          <div class="entries-head">
+            <h2>등록 항목</h2>
+          </div>
+
+          <div id="entries" class="entries"></div>
+
+          <div class="submit-row">
+            <button id="add-entry-button" type="button" class="ghost-btn">항목 추가</button>
+            <button id="submit-button" type="submit">
+              <span id="submit-text">일괄 등록</span>
+              <span id="submit-spinner" class="spinner button-spinner" aria-hidden="true" hidden></span>
+            </button>
+            <p id="form-message" class="message" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
     </section>
   </main>
+
+  <template id="entry-template">
+    <article class="entry-card" data-entry>
+      <div class="entry-head">
+        <strong class="entry-index">소재 1</strong>
+        <button type="button" class="remove-entry" aria-label="항목 삭제">삭제</button>
+      </div>
+
+      <div class="field">
+        <label>질문</label>
+        <textarea class="entry-question" rows="3" placeholder="질문을 입력하세요" required></textarea>
+      </div>
+
+      <div class="field">
+        <label>정답</label>
+        <input class="entry-answer" type="text" placeholder="정답을 입력하세요" required>
+      </div>
+
+      <div class="field">
+        <label>한 줄 해설</label>
+        <input class="entry-description" type="text" placeholder="핵심 설명 한 줄" required>
+      </div>
+
+      <div class="field">
+        <label>출처 링크/비고</label>
+        <input class="entry-source" type="text" placeholder="기사 링크 또는 메모">
+      </div>
+    </article>
+  </template>
 
   <script src="script.js"></script>
 </body>
