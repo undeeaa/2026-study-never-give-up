@@ -13,6 +13,8 @@
       <nav class="top-nav" aria-label="주요 메뉴">
         <a href="?view=list" data-view-link="list" id="nav-list">소재 목록</a>
         <a href="?view=add" data-view-link="add" id="nav-add">소재 등록</a>
+        <a href="?view=flash" data-view-link="flash" id="nav-flash">플래시 카드</a>
+        <a href="?view=quiz" data-view-link="quiz" id="nav-quiz">문제 풀기</a>
       </nav>
     </div>
   </header>
@@ -88,6 +90,147 @@
             <p id="form-message" class="message" role="status" aria-live="polite"></p>
           </div>
         </form>
+      </div>
+    </section>
+
+    <section id="view-flash" class="view" aria-labelledby="flash-page-title">
+      <div class="page-shell narrow">
+        <header class="page-head">
+          <div>
+            <p class="kicker">Memorize</p>
+            <h1 id="flash-page-title">암기용 플래시 카드</h1>
+            <p>선택한 대분류의 정답과 해설만 모아 빠르게 암기하세요.</p>
+          </div>
+        </header>
+
+        <div id="flash-setup-step" class="panel-card">
+          <h2 class="panel-title">카테고리 선택</h2>
+          <div id="flash-category-options" class="category-options"></div>
+          <div class="panel-actions flash-setup-actions">
+            <button id="flash-start-button" type="button">플래시 카드 시작</button>
+            <button id="flash-reset-button" type="button" class="ghost-btn">선택 초기화</button>
+          </div>
+          <p id="flash-setup-status" class="status" aria-live="polite"></p>
+        </div>
+
+        <div id="flash-play-step" class="game-stage" hidden>
+          <div class="game-stage-head">
+            <div class="game-progress">
+              <div
+                id="flash-progress-track"
+                class="progress-track"
+                role="progressbar"
+                aria-label="플래시 카드 진행도"
+                aria-valuemin="0"
+                aria-valuemax="0"
+                aria-valuenow="0"
+              >
+                <span id="flash-progress-fill" class="progress-fill"></span>
+              </div>
+              <p id="flash-progress" class="status"></p>
+            </div>
+            <button id="flash-back-button" type="button" class="ghost-btn">설정으로</button>
+          </div>
+
+          <article id="flash-card" class="flash-flip-card" aria-label="플래시 카드" tabindex="0">
+            <div class="flash-flip-inner">
+              <div class="flash-face flash-front">
+                <h3 id="flash-answer">-</h3>
+              </div>
+              <div class="flash-face flash-back">
+                <span class="flash-face-label">해설</span>
+                <p id="flash-description">-</p>
+              </div>
+            </div>
+          </article>
+
+          <div class="panel-actions panel-actions-center flash-next-actions">
+            <button id="flash-next-button" type="button">다음 카드</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-quiz" class="view" aria-labelledby="quiz-page-title">
+      <div class="page-shell narrow">
+        <header class="page-head">
+          <div>
+            <p class="kicker">Practice</p>
+            <h1 id="quiz-page-title">문제 풀기</h1>
+            <p>질문을 보고 정답을 입력한 뒤, 답 제출 버튼으로 채점하세요.</p>
+          </div>
+        </header>
+
+        <div id="quiz-setup-step" class="panel-card">
+          <h2 class="panel-title">문제 세트 설정</h2>
+          <div id="quiz-category-options" class="category-options"></div>
+
+          <div class="quiz-setup-grid">
+            <div class="field">
+              <label for="quiz-count-select">문제 수</label>
+              <select id="quiz-count-select">
+                <option value="5">5개</option>
+                <option value="10">10개</option>
+                <option value="20">20개</option>
+                <option value="30">30개</option>
+                <option value="40">40개</option>
+                <option value="50">50개</option>
+                <option value="all">전체</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="panel-actions">
+            <button id="quiz-start-button" type="button">문제 시작</button>
+          </div>
+          <p id="quiz-setup-status" class="status" aria-live="polite"></p>
+        </div>
+
+        <div id="quiz-play-step" class="game-stage" hidden>
+          <div class="game-stage-head">
+            <div class="game-progress quiz-progress-wrap">
+              <div
+                id="quiz-progress-track"
+                class="progress-track"
+                role="progressbar"
+                aria-label="문제 풀기 진행도"
+                aria-valuemin="0"
+                aria-valuemax="0"
+                aria-valuenow="0"
+              >
+                <span id="quiz-progress-fill" class="progress-fill"></span>
+              </div>
+              <p id="quiz-progress" class="status"></p>
+            </div>
+            <button id="quiz-back-button" type="button" class="ghost-btn">설정으로</button>
+          </div>
+
+          <div id="quiz-player" class="panel-card">
+            <article class="quiz-question-box">
+              <span id="quiz-question-label" class="quiz-question-label">문제</span>
+              <h3 id="quiz-question">-</h3>
+            </article>
+
+            <div class="field quiz-answer-field">
+              <label for="quiz-answer-input">정답 입력</label>
+              <input id="quiz-answer-input" type="text" placeholder="정답을 입력하세요" autocomplete="off">
+            </div>
+
+            <p id="quiz-live-result" class="status" aria-live="polite"></p>
+
+            <div class="panel-actions quiz-action-row">
+              <button id="quiz-submit-button" type="button">답 제출</button>
+              <button id="quiz-skip-button" type="button" class="ghost-btn">모르겠어요</button>
+              <button id="quiz-next-button" type="button" class="ghost-btn" disabled hidden>다음</button>
+            </div>
+          </div>
+
+          <div id="quiz-result" class="panel-card" hidden>
+            <h2 class="panel-title">결과</h2>
+            <p id="quiz-score" class="status"></p>
+            <div id="quiz-wrong-list" class="wrong-list"></div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
