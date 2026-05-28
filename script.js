@@ -30,9 +30,9 @@ const state = {
   quiz: {
     items: [],
     index: 0,
-    results: [],
+    score: 0,
     answeredCurrent: false,
-    pendingResult: null,
+    needsCorrection: false,
   },
 };
 
@@ -88,21 +88,18 @@ const quizPlayStep = document.getElementById("quiz-play-step");
 const quizCountSelect = document.getElementById("quiz-count-select");
 const quizStartButton = document.getElementById("quiz-start-button");
 const quizBackButton = document.getElementById("quiz-back-button");
+const quizRestartButton = document.getElementById("quiz-restart-button");
 const quizSetupStatus = document.getElementById("quiz-setup-status");
-const quizPlayer = document.getElementById("quiz-player");
-const quizProgress = document.getElementById("quiz-progress");
-const quizProgressTrack = document.getElementById("quiz-progress-track");
-const quizProgressFill = document.getElementById("quiz-progress-fill");
-const quizQuestionLabel = document.getElementById("quiz-question-label");
-const quizQuestion = document.getElementById("quiz-question");
+const quizDoneStep = document.getElementById("quiz-done-step");
+const quizProgressText = document.getElementById("quiz-progress-text");
+const quizScoreLive = document.getElementById("quiz-score-live");
+const quizSentence = document.getElementById("quiz-sentence");
+const quizContentBox = document.querySelector(".quiz-content-box");
 const quizAnswerInput = document.getElementById("quiz-answer-input");
 const quizLiveResult = document.getElementById("quiz-live-result");
 const quizSubmitButton = document.getElementById("quiz-submit-button");
-const quizSkipButton = document.getElementById("quiz-skip-button");
 const quizNextButton = document.getElementById("quiz-next-button");
-const quizResult = document.getElementById("quiz-result");
-const quizScore = document.getElementById("quiz-score");
-const quizWrongList = document.getElementById("quiz-wrong-list");
+const quizResultSummary = document.getElementById("quiz-result-summary");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -177,12 +174,25 @@ function categoryDisplayText(categoryId) {
 function normalizeCompare(value) {
   return String(value ?? "")
     .toLowerCase()
-    .replace(/\s+/g, "")
+    .replace(/[\s·,.\-_/()『』「」《》<>]/g, "")
     .trim();
 }
 
-function isCorrectAnswer(input, answer) {
-  return normalizeCompare(input) === normalizeCompare(answer);
+function isCorrectAnswer(input, answer, alias = "") {
+  const normalizedInput = normalizeCompare(input);
+  if (!normalizedInput) {
+    return false;
+  }
+
+  const rawAnswers = [String(answer ?? ""), String(alias ?? "")].filter(Boolean);
+  const candidates = rawAnswers.flatMap((rawAnswer) => [
+    normalizeCompare(rawAnswer),
+    ...rawAnswer
+      .split(/[,\n/;|]/)
+      .map((item) => normalizeCompare(item))
+      .filter(Boolean),
+  ]);
+  return new Set(candidates).has(normalizedInput);
 }
 
 function shuffle(items) {
@@ -207,6 +217,7 @@ function normalizeItem(item) {
     category: categoryLabel,
     question: firstFilled(item?.question, item?.problem, item?.point, item?.title),
     answer: firstFilled(item?.answer, item?.correct, item?.solution),
+    alias: firstFilled(item?.alias, item?.aliases),
     description: firstFilled(item?.description, item?.summary),
     source: firstFilled(item?.source),
   };
@@ -847,22 +858,37 @@ function getQuizTargetCount(selectedValue, availableCount) {
 }
 
 function setQuizStage(stage) {
-  const isPlay = stage === "play";
-  quizSetupStep.hidden = isPlay;
-  quizPlayStep.hidden = !isPlay;
+  quizSetupStep.hidden = stage !== "setup";
+  quizPlayStep.hidden = stage !== "play";
+  quizDoneStep.hidden = stage !== "done";
 }
 
-function setQuizProgress(current, total) {
-  const safeCurrent = Number.isFinite(current) ? Math.max(0, current) : 0;
-  const safeTotal = Number.isFinite(total) ? Math.max(0, total) : 0;
-  const ratio = safeTotal > 0 ? Math.min(1, safeCurrent / safeTotal) : 0;
-  const percent = ratio * 100;
-  const visualPercent = safeCurrent > 0 && safeTotal > 0 ? Math.max(percent, 3) : 0;
+function renderQuizMeta() {
+  const total = state.quiz.items.length;
+  const currentOrder = total === 0 ? 0 : Math.min(state.quiz.index + 1, total);
+  quizProgressText.textContent = `${currentOrder} / ${total}`;
+  quizScoreLive.textContent = `${state.quiz.score}점`;
+}
 
-  quizProgressTrack.setAttribute("aria-valuemax", String(safeTotal));
-  quizProgressTrack.setAttribute("aria-valuenow", String(Math.min(safeCurrent, safeTotal)));
-  quizProgressTrack.setAttribute("aria-valuetext", `${Math.min(safeCurrent, safeTotal)} / ${safeTotal}`);
-  quizProgressFill.style.width = `${visualPercent}%`;
+function setQuizCardTone(tone = "") {
+  if (!quizContentBox) {
+    return;
+  }
+  if (tone === "correct") {
+    quizContentBox.className = "quiz-content-box is-correct";
+    return;
+  }
+  if (tone === "wrong") {
+    quizContentBox.className = "quiz-content-box is-wrong";
+    return;
+  }
+  quizContentBox.className = "quiz-content-box";
+}
+
+function resetQuizCorrectionState() {
+  state.quiz.answeredCurrent = false;
+  state.quiz.needsCorrection = false;
+  setQuizCardTone();
 }
 
 function renderQuizCurrent() {
@@ -871,22 +897,15 @@ function renderQuizCurrent() {
     return;
   }
 
-  state.quiz.answeredCurrent = false;
-  state.quiz.pendingResult = null;
+  resetQuizCorrectionState();
+  renderQuizMeta();
+  quizSentence.textContent = current.question || "(질문 없음)";
 
-  const currentOrder = state.quiz.index + 1;
-  const total = state.quiz.items.length;
-  const categoryText = current.categoryId
-    ? categoryDisplayText(current.categoryId)
-    : firstFilled(current.category, "미분류");
-  setQuizProgress(currentOrder, total);
-  quizProgress.textContent = `${currentOrder} / ${total}`;
-  quizQuestionLabel.textContent = categoryText;
-  quizQuestion.textContent = current.question || "(질문 없음)";
   quizAnswerInput.value = "";
+  quizAnswerInput.readOnly = false;
   quizAnswerInput.disabled = false;
   quizSubmitButton.disabled = false;
-  quizSkipButton.disabled = false;
+  quizSubmitButton.hidden = false;
   quizNextButton.disabled = true;
   quizNextButton.hidden = true;
   setStatus(quizLiveResult, "", "정답을 입력하고 답 제출을 눌러주세요.");
@@ -896,52 +915,24 @@ function renderQuizCurrent() {
   quizAnswerInput.focus();
 }
 
-function showQuizResult() {
-  quizPlayer.hidden = true;
-  quizResult.hidden = false;
-
-  const total = state.quiz.results.length;
-  const correctCount = state.quiz.results.filter((result) => result.correct).length;
-  const percent = total === 0 ? 0 : Math.round((correctCount / total) * 100);
-  quizScore.textContent = `총 ${total}문제 중 ${correctCount}개 정답 (${percent}%)`;
-
-  const wrongResults = state.quiz.results.filter((result) => !result.correct);
-
-  if (wrongResults.length === 0) {
-    quizWrongList.innerHTML = '<div class="empty">완벽합니다. 틀린 문제가 없습니다.</div>';
-    return;
-  }
-
-  quizWrongList.innerHTML = wrongResults
-    .map((result, index) => {
-      const safeQuestion = escapeHtml(result.item.question || "-");
-      const safeAnswer = escapeHtml(result.item.answer || "-");
-      const safeDescription = escapeHtml(result.item.description || "-");
-      const safeUserAnswer = escapeHtml(result.userAnswer || "미입력");
-
-      return `
-        <article class="wrong-item">
-          <p><strong>${index + 1}. 질문</strong>: ${safeQuestion}</p>
-          <p><strong>정답</strong>: ${safeAnswer}</p>
-          <p><strong>내 입력</strong>: ${safeUserAnswer}</p>
-          <p><strong>해설</strong>: ${safeDescription}</p>
-        </article>
-      `;
-    })
-    .join("");
+function showQuizDone() {
+  const total = state.quiz.items.length;
+  quizResultSummary.textContent = `총 ${total}개 중 ${state.quiz.score}개 정답`;
+  setQuizStage("done");
 }
 
 function moveQuizToNextOrResult() {
+  resetQuizCorrectionState();
   state.quiz.index += 1;
   if (state.quiz.index >= state.quiz.items.length) {
-    showQuizResult();
+    showQuizDone();
   } else {
     renderQuizCurrent();
   }
 }
 
 function submitQuizAnswer() {
-  if (state.quiz.answeredCurrent) {
+  if (state.quiz.answeredCurrent && !state.quiz.needsCorrection) {
     return;
   }
 
@@ -952,54 +943,58 @@ function submitQuizAnswer() {
 
   const userAnswer = quizAnswerInput.value.trim();
   if (!userAnswer) {
-    setStatus(quizLiveResult, "error", "정답을 입력한 뒤 답 제출을 눌러주세요.");
+    setStatus(quizLiveResult, "", "정답을 입력한 뒤 답 제출을 눌러주세요.");
     return;
   }
 
-  const correct = isCorrectAnswer(userAnswer, current.answer);
-  const result = {
-    item: current,
-    userAnswer,
-    correct,
-    skipped: false,
-  };
+  const correct = isCorrectAnswer(userAnswer, current.answer, current.alias);
 
-  state.quiz.results.push(result);
-  state.quiz.pendingResult = result;
-  state.quiz.answeredCurrent = true;
+  if (state.quiz.needsCorrection) {
+    if (correct) {
+      state.quiz.needsCorrection = false;
+      state.quiz.answeredCurrent = true;
+      setQuizCardTone("correct");
+      setStatus(quizLiveResult, "", "정답입니다. 엔터를 누르면 다음 문제로 이동합니다.");
+      quizAnswerInput.readOnly = true;
+      quizSubmitButton.disabled = true;
+      quizSubmitButton.hidden = true;
+      quizNextButton.disabled = false;
+      quizNextButton.hidden = false;
+      quizAnswerInput.focus();
+      return;
+    }
+    setQuizCardTone("wrong");
+    setStatus(quizLiveResult, "", `오답입니다.\n정답: ${current.answer || "-"}\n정답을 입력하면 다음으로 넘어갑니다.`);
+    quizAnswerInput.select();
+    return;
+  }
 
   if (correct) {
-    setStatus(quizLiveResult, "success", "정답입니다. 다음으로 진행하세요.");
+    state.quiz.score += 1;
+    state.quiz.answeredCurrent = true;
+    state.quiz.needsCorrection = false;
+    renderQuizMeta();
+    setQuizCardTone("correct");
+    setStatus(quizLiveResult, "", "정답입니다. 엔터를 누르면 다음 문제로 이동합니다.");
+    quizAnswerInput.readOnly = true;
+    quizSubmitButton.disabled = true;
+    quizSubmitButton.hidden = true;
+    quizNextButton.disabled = false;
+    quizNextButton.hidden = false;
+    quizAnswerInput.focus();
   } else {
-    setStatus(quizLiveResult, "error", `오답입니다. 정답: ${current.answer || "-"}`);
+    state.quiz.needsCorrection = true;
+    state.quiz.answeredCurrent = false;
+    setQuizCardTone("wrong");
+    setStatus(quizLiveResult, "", `오답입니다.\n정답: ${current.answer || "-"}\n정답을 입력하면 다음으로 넘어갑니다.`);
+    quizAnswerInput.value = "";
+    quizAnswerInput.focus();
   }
-
-  quizAnswerInput.disabled = true;
-  quizSubmitButton.disabled = true;
-  quizSkipButton.disabled = true;
-  quizNextButton.disabled = false;
-  quizNextButton.hidden = false;
-}
-
-function skipQuizCurrent() {
-  const current = state.quiz.items[state.quiz.index];
-  if (!current) {
-    return;
-  }
-
-  state.quiz.results.push({
-    item: current,
-    userAnswer: "스킵함",
-    correct: false,
-    skipped: true,
-  });
-
-  moveQuizToNextOrResult();
 }
 
 function advanceQuizStep() {
   if (!state.quiz.answeredCurrent) {
-    setStatus(quizLiveResult, "error", "먼저 답 제출을 눌러 채점해 주세요.");
+    setStatus(quizLiveResult, "", "먼저 답 제출을 눌러 채점해 주세요.");
     return;
   }
   moveQuizToNextOrResult();
@@ -1008,7 +1003,7 @@ function advanceQuizStep() {
 async function startQuiz() {
   const ok = await ensureItemsLoaded();
   if (!ok) {
-    setStatus(quizSetupStatus, "error", "목록을 불러오지 못해 문제를 시작할 수 없습니다.");
+    setStatus(quizSetupStatus, "error", "목록을 불러오지 못해 퀴즈를 시작할 수 없습니다.");
     return;
   }
 
@@ -1026,7 +1021,7 @@ async function startQuiz() {
   });
 
   if (pool.length === 0) {
-    setStatus(quizSetupStatus, "error", "선택한 카테고리에 문제 풀이 가능한 항목이 없습니다.");
+    setStatus(quizSetupStatus, "error", "선택한 카테고리에 퀴즈 가능한 항목이 없습니다.");
     return;
   }
 
@@ -1035,14 +1030,11 @@ async function startQuiz() {
 
   state.quiz.items = items;
   state.quiz.index = 0;
-  state.quiz.results = [];
-  state.quiz.answeredCurrent = false;
-  state.quiz.pendingResult = null;
+  state.quiz.score = 0;
+  resetQuizCorrectionState();
 
-  quizPlayer.hidden = false;
-  quizResult.hidden = true;
   setQuizStage("play");
-  setStatus(quizSetupStatus, "", `총 ${items.length}문제를 시작합니다.`);
+  setStatus(quizSetupStatus, "", `총 ${items.length}개 퀴즈를 시작합니다.`);
   renderQuizCurrent();
 }
 
@@ -1051,18 +1043,19 @@ function resetQuizSetup() {
   quizCountSelect.value = "5";
   state.quiz.items = [];
   state.quiz.index = 0;
-  state.quiz.results = [];
-  state.quiz.answeredCurrent = false;
-  state.quiz.pendingResult = null;
+  state.quiz.score = 0;
+  resetQuizCorrectionState();
 
-  quizPlayer.hidden = true;
-  quizResult.hidden = true;
+  quizSubmitButton.hidden = false;
+  quizSubmitButton.disabled = false;
   quizNextButton.hidden = true;
+  quizNextButton.disabled = true;
+  setQuizCardTone();
+  quizSentence.textContent = "-";
+  quizResultSummary.textContent = "총 0개 중 0개 정답";
   setQuizStage("setup");
-  setQuizProgress(0, 0);
-  quizProgress.textContent = "0 / 0";
-  quizQuestionLabel.textContent = "문제";
-  setStatus(quizSetupStatus, "", "카테고리와 문제 수를 선택하고 시작해 주세요.");
+  renderQuizMeta();
+  setStatus(quizSetupStatus, "", "카테고리와 퀴즈 수를 선택하고 시작해 주세요.");
   setStatus(quizLiveResult, "", "");
 }
 
@@ -1158,6 +1151,10 @@ function bindEvents() {
     resetQuizSetup();
   });
 
+  quizRestartButton.addEventListener("click", () => {
+    startQuiz();
+  });
+
   quizSubmitButton.addEventListener("click", () => {
     submitQuizAnswer();
   });
@@ -1166,17 +1163,17 @@ function bindEvents() {
     advanceQuizStep();
   });
 
-  quizSkipButton.addEventListener("click", () => {
-    skipQuizCurrent();
-  });
-
   quizAnswerInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
+      if (event.repeat) {
+        event.preventDefault();
+        return;
+      }
       event.preventDefault();
-      if (!quizSubmitButton.disabled) {
-        submitQuizAnswer();
-      } else if (!quizNextButton.disabled) {
+      if (state.quiz.answeredCurrent) {
         advanceQuizStep();
+      } else {
+        submitQuizAnswer();
       }
     }
   });

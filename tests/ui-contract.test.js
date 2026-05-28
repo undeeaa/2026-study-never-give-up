@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = '/Volumes/T7/_개발/2025-study';
+const ROOT = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
 const js = fs.readFileSync(path.join(ROOT, 'script.js'), 'utf8');
@@ -143,30 +143,55 @@ test('flash setup has "description first" option and uses it as initial card sid
   assert.match(js, /flashPreferDescriptionInput\.checked = false/);
 });
 
-test('quiz view has progress bar UI and progress updater', () => {
-  assert.match(html, /id=\"quiz-progress-track\"/);
-  assert.match(html, /id=\"quiz-progress-fill\"/);
-  assert.match(js, /function setQuizProgress\(/);
-  assert.match(js, /setQuizProgress\(currentOrder,\s*total\);/);
-  assert.match(css, /\.quiz-progress-wrap\s+\.progress-track/);
+test('quiz view uses sentence-focused play layout', () => {
+  assert.match(html, /id=\"nav-quiz\">퀴즈 풀기<\/a>/);
+  assert.match(html, /id=\"quiz-progress-text\"/);
+  assert.match(html, /id=\"quiz-score-live\"/);
+  assert.match(html, /id=\"quiz-sentence\"/);
+  assert.match(html, /id=\"quiz-done-step\"/);
+  assert.match(html, /id=\"quiz-result-summary\"/);
+  assert.match(html, /id=\"quiz-restart-button\"/);
+  assert.doesNotMatch(html, /id=\"quiz-progress-track\"/);
+  assert.doesNotMatch(html, /id=\"quiz-skip-button\"/);
+  assert.doesNotMatch(html, /id=\"quiz-wrong-list\"/);
+  assert.match(css, /\.quiz-meta-bar\s*\{/);
+  assert.match(css, /\.quiz-content-box\s*\{/);
+  assert.match(css, /\.quiz-content-box\.is-correct\s*\{/);
+  assert.match(css, /\.quiz-content-box\.is-wrong\s*\{/);
+  assert.match(css, /\.quiz-result-summary\s*\{/);
+  assert.doesNotMatch(css, /#quiz-live-result\.status\.success/);
+  assert.doesNotMatch(css, /#quiz-live-result\.status\.error/);
+  assert.doesNotMatch(css, /\.quiz-background\s*\{/);
 });
 
-test('quiz workflow uses submit-based judging and two-stage flow', () => {
+test('quiz workflow enforces correction input and restart flow', () => {
   assert.match(html, /id=\"quiz-setup-step\"/);
   assert.match(html, /id=\"quiz-play-step\"/);
-  assert.match(html, /id=\"quiz-question-label\"/);
   assert.match(html, /id=\"quiz-submit-button\"/);
   assert.match(html, /id=\"quiz-next-button\"[\s\S]*disabled[\s\S]*hidden/);
   assert.match(js, /function submitQuizAnswer\(\)/);
   assert.match(js, /function advanceQuizStep\(\)/);
+  assert.match(js, /function resetQuizCorrectionState\(\)/);
+  assert.match(js, /function setQuizCardTone\(tone = \"\"\)/);
+  assert.match(js, /function showQuizDone\(\)/);
   assert.match(js, /if \(!state\.quiz\.answeredCurrent\)/);
+  assert.match(js, /if \(state\.quiz\.needsCorrection\)/);
+  assert.match(js, /state\.quiz\.needsCorrection = true/);
+  assert.match(js, /state\.quiz\.score \+= 1/);
+  assert.match(js, /if \(state\.quiz\.answeredCurrent && !state\.quiz\.needsCorrection\)/);
+  assert.doesNotMatch(js, /transitionLockUntil/);
+  assert.match(js, /setQuizCardTone\(\"correct\"\)/);
+  assert.match(js, /setQuizCardTone\(\"wrong\"\)/);
+  assert.match(js, /resetQuizCorrectionState\(\);/);
+  assert.doesNotMatch(js, /setStatus\(quizLiveResult,\s*\"success\"/);
+  assert.doesNotMatch(js, /setStatus\(quizLiveResult,\s*\"error\"/);
+  assert.match(js, /quizSubmitButton\.hidden = true/);
+  assert.match(js, /quizRestartButton\.addEventListener\(\"click\"/);
+  assert.match(js, /setQuizStage\(\"done\"\)/);
+  assert.match(js, /정답: \$\{current\.answer \|\| \"-\"\}\\n정답을 입력하면 다음으로 넘어갑니다\./);
   assert.doesNotMatch(js, /function evaluateCurrentQuizInput\(\)/);
-  assert.match(js, /quizSkipButton\.addEventListener\(\"click\"/);
-  assert.match(js, /quizQuestionLabel\.textContent = categoryText/);
+  assert.doesNotMatch(js, /function skipQuizCurrent\(\)/);
+  assert.doesNotMatch(js, /state\.quiz\.results/);
   assert.match(js, /quizNextButton\.hidden\s*=\s*true/);
   assert.match(js, /quizNextButton\.hidden\s*=\s*false/);
-  assert.match(js, /userAnswer: \"스킵함\"/);
-  assert.match(js, /<strong>정답<\/strong>/);
-  assert.match(js, /<strong>내 입력<\/strong>/);
-  assert.match(js, /<strong>해설<\/strong>/);
 });
